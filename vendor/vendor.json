@@ -169,6 +169,12 @@
 			"revisionTime": "2016-11-12T12:52:42Z"
 		},
 		{
+			"checksumSHA1": "5qwv3yDROEz5ZV8HztOBmQxen8c=",
+			"path": "github.com/robertkrimen/otto",
+			"revision": "bf1c3795ba078da6905fe80bfbc3ed3d8c36e9aa",
+			"revisionTime": "2016-10-04T12:49:59Z"
+		},
+		{
 			"checksumSHA1": "9QKY4bQlbQ/VZZFP8/1WtH4b0mA=",
 			"origin": "github.com/docker/docker/vendor/golang.org/x/net/context",
 			"path": "golang.org/x/net/context",
