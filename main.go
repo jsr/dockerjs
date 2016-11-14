@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/chzyer/readline"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/robertkrimen/otto"
 
@@ -26,14 +29,12 @@ func main() {
 		file, err := ioutil.ReadFile(filename)
 		if err != nil {
 			fmt.Println("Couldn't read file: ", filename)
-			val, _ := js.ToValue(nil)
-			return val
+			return otto.NullValue()
 		}
 		result, err := js.Run(file)
 		if err != nil {
 			fmt.Println("Couldn't execute file: ", err)
-			val, _ := js.ToValue(nil)
-			return val
+			return otto.NullValue()
 
 		}
 		val, _ := js.ToValue(result)
@@ -43,16 +44,14 @@ func main() {
 	js.Set("print", func(call otto.FunctionCall) otto.Value {
 		msg, _ := call.Argument(0).ToString()
 		fmt.Println(msg)
-		val, _ := js.ToValue(nil)
-		return val
+		return otto.NullValue()
 	})
 
 	js.Set("containers", func(call otto.FunctionCall) otto.Value {
 		containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
 		if err != nil {
 			fmt.Println("Couldn't find containers: ", err)
-			val, _ := js.ToValue(nil)
-			return val
+			return otto.NullValue()
 		}
 
 		var results []otto.Value
@@ -62,6 +61,80 @@ func main() {
 			results = append(results, val)
 		}
 		val, _ := js.ToValue(results)
+		return val
+	})
+
+	js.Set("run", func(call otto.FunctionCall) otto.Value {
+		containerConfigRaw, err := call.Argument(0).Export()
+		if err != nil {
+			fmt.Println("Must specify container.Config")
+			return otto.NullValue()
+		}
+		containerConfigJson, _ := json.Marshal(containerConfigRaw)
+		containerConfig := new(container.Config)
+		json.Unmarshal(containerConfigJson, containerConfig)
+
+		hostConfigRaw, err := call.Argument(1).Export()
+		if err != nil {
+			fmt.Println("Must specifh container.HostConfig")
+			return otto.NullValue()
+		}
+
+		hostConfigJson, _ := json.Marshal(hostConfigRaw)
+		hostConfig := new(container.HostConfig)
+		json.Unmarshal(hostConfigJson, hostConfig)
+
+		networkConfigRaw, err := call.Argument(2).Export()
+		if err != nil {
+			fmt.Println("Must specify network.NetworkingConfig")
+			return otto.NullValue()
+		}
+
+		networkConfigJson, _ := json.Marshal(networkConfigRaw)
+		networkConfig := new(network.NetworkingConfig)
+		json.Unmarshal(networkConfigJson, networkConfig)
+
+		containerName, err := call.Argument(3).Export()
+		if err != nil {
+			fmt.Println("Must specify name for container")
+			return otto.NullValue()
+		}
+
+		if len(containerConfig.Image) == 0 {
+			fmt.Println("Must specify image of container to run")
+			return otto.NullValue()
+		}
+
+		pull_result, err := cli.ImagePull(context.Background(), containerConfig.Image, types.ImagePullOptions{})
+		if err != nil {
+			fmt.Println("Cloudn't pull image:", err)
+			return otto.NullValue()
+		}
+		body, err := ioutil.ReadAll(pull_result)
+		if err != nil {
+			fmt.Println("Couldn't pull image after read:", err)
+			return otto.NullValue()
+		}
+		if bytes.Contains(body, []byte("errorDetail")) {
+			fmt.Println("Error loading imag")
+			return otto.NullValue()
+		}
+
+		create_result, err := cli.ContainerCreate(context.Background(), containerConfig, hostConfig, networkConfig, containerName.(string))
+
+		if err != nil {
+			fmt.Println("Failed creating container:", err)
+			return otto.NullValue()
+		}
+
+		err = cli.ContainerStart(context.Background(), create_result.ID, types.ContainerStartOptions{})
+
+		if err != nil {
+			fmt.Println("Failed starting container:", err)
+			return otto.NullValue()
+		}
+
+		val, _ := js.ToValue(create_result)
 		return val
 	})
 
@@ -106,12 +179,16 @@ func printOttoValue(value otto.Value) {
 			for _, elt := range arr.([]otto.Value) {
 				obj, _ := elt.Export()
 				jsn, _ := json.Marshal(obj)
-				fmt.Println(" ", string(jsn))
+				var out bytes.Buffer
+				json.Indent(&out, jsn, "", "\t")
+				fmt.Println(out.String())
 			}
 		} else {
 			obj, _ := value.Export()
 			jsn, _ := json.Marshal(obj)
-			fmt.Println(string(jsn))
+			var out bytes.Buffer
+			json.Indent(&out, jsn, "", "\t")
+			fmt.Println(out.String())
 		}
 	}
 }
