@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/robertkrimen/otto"
+	"time"
 
 	"io"
 	"io/ioutil"
@@ -24,6 +25,11 @@ func main() {
 		return
 	}
 
+	js.Set("sleep", func(call otto.FunctionCall) otto.Value {
+		millis, _ := call.Argument(0).ToInteger()
+		time.Sleep(time.Duration(millis) * time.Millisecond)
+		return otto.NullValue()
+	})
 	js.Set("require", func(call otto.FunctionCall) otto.Value {
 		filename, _ := call.Argument(0).ToString()
 		file, err := ioutil.ReadFile(filename)
@@ -165,30 +171,12 @@ func main() {
 		}
 
 		value, err := js.Run(input)
+
 		if err != nil {
 			fmt.Println("Error running command: ", err)
 		}
-		printOttoValue(value)
-	}
-}
 
-func printOttoValue(value otto.Value) {
-	if value.IsDefined() {
-		if value.Class() == "GoArray" {
-			arr, _ := value.Export()
-			for _, elt := range arr.([]otto.Value) {
-				obj, _ := elt.Export()
-				jsn, _ := json.Marshal(obj)
-				var out bytes.Buffer
-				json.Indent(&out, jsn, "", "\t")
-				fmt.Println(out.String())
-			}
-		} else {
-			obj, _ := value.Export()
-			jsn, _ := json.Marshal(obj)
-			var out bytes.Buffer
-			json.Indent(&out, jsn, "", "\t")
-			fmt.Println(out.String())
-		}
+		valuejson, err := js.Call("JSON.stringify", nil, value, nil, "  ")
+		fmt.Println(valuejson)
 	}
 }
