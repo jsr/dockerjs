@@ -176,7 +176,9 @@ func main() {
 			fmt.Println("Error running command: ", err)
 		}
 
-		valuejson, err := js.Call("JSON.stringify", nil, value, nil, "  ")
-		fmt.Println(valuejson)
+		if !value.IsNull() {
+			valuejson, _ := js.Call("JSON.stringify", nil, value, nil, "  ")
+			fmt.Println(valuejson)
+		}
 	}
 }
