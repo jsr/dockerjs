@@ -27,8 +27,12 @@ Container.match = function(predicate) {
 
 Container.findByID = function(id) {
 	c = Container.match(function(container) {
-		return container.ID == id;
+		return container.ID.indexOf(id) == 0;
 	})[0]
+
+	if( c == null ) {
+		return null 
+	}
 
 	result = new Container( c.Image, c.Names[0] );
 	result.ID = c.ID;

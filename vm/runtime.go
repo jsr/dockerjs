@@ -51,11 +51,20 @@ func (vm *vm) installExtensions() {
 		fmt.Println(`
 Builtin commands: 
 
-  list()                                        Returns the list of running containers 
-  run(config, hostConfig, networkConfig, name)  Pull, create, then run a new container
-  sleep(milliseconds)                           Sleep for specified millis
-  require(filename)                             Load a .js file into the runtime
-	print(string)                                 Output string to stdout
+  list() -> []container                                    
+    Returns the list of running containers 
+
+  run(config, hostConfig, networkConfig, name) -> createResult  
+    Pull, create, then run a new container
+
+  sleep(milliseconds)                           
+    Sleep for specified millis
+
+  require(filename)                             
+    Load a .js file into the runtime
+
+  print(string)                                 
+    Output string to stdout
 
 `)
 		return otto.NullValue()
@@ -179,4 +188,5 @@ Builtin commands:
 		val, _ := vm.otto.ToValue(create_result)
 		return val
 	})
+	vm.Evaluate("require('container.js')")
 }
