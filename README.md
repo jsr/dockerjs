@@ -6,14 +6,36 @@ Docker.js is a javascript runtime for docker. It allows you to write javascript 
 
 ```
 $ git clone https://github.com/jsr/dockerjs.git
+$ cd dockerjs 
+$ go get 
 $ go build 
+```
+
+In order to run docker.js, you'll need a docker host available and your ENV setup so that the docker client API can reach it. 
+
+```
 $ ./dockerjs
 Docker.js shell version 0.0.1
 Type help() to get a list of builtin commands
-> print("hello!") 
-hello!
->
+
+``` 
+
+You can create a new container 
 ```
+> c = new Container("redis", "my-first-container") 
+``` 
+You can register callbacks on container events 
+``` 
+> c.on('start', function(event) { print("hello world!"); })
+```
+Now we'll start the container. You should see "hello world!" printed when the start event hits. 
+```
+> c.run() 
+> 
+hello world!
+
+```
+
 # High level API 
 
 
