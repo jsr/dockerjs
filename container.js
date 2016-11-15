@@ -1,8 +1,12 @@
-function Container( image, name ) {
+function Container( image, name, id ) {
 	this.image = image;
 	this.name  = name; 
-	result = create({'Image':this.image}, null, null, this.name);
-	this.ID = result.ID
+	if(!id) {
+		result = create({'Image':this.image}, null, null, this.name);
+		this.ID = result.ID
+	} else { 
+		this.ID = id 
+	}
 }
 
 Container.prototype.run = function() {
@@ -37,8 +41,7 @@ Container.findByID = function(id) {
 		return null 
 	}
 
-	result = new Container( c.Image, c.Names[0] );
-	result.ID = c.ID;
+	result = new Container( c.Image, c.Names[0], c.ID );
 	return result
 }
 
