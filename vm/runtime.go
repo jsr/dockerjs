@@ -54,10 +54,10 @@ func (vm *vm) eventLoop() {
 					}
 				}
 			case <-errCh:
-				time.Sleep(3 * time.Second)
+				time.Sleep(1 * time.Second)
 				break
 			default:
-				time.Sleep(3 * time.Second)
+				time.Sleep(1 * time.Second)
 				break
 			}
 		}
@@ -69,7 +69,7 @@ func (vm *vm) Evaluate(input string) (output string, err error) {
 	if err != nil {
 		return "", err
 	}
-	if !out.IsNull() {
+	if !out.IsNull() && !out.IsUndefined() {
 		json, _ := vm.otto.Call("JSON.stringify", nil, out, nil, "  ")
 		return json.String(), nil
 	} else {
@@ -151,7 +151,7 @@ Builtin commands:
 
 	vm.otto.Set("print", func(call otto.FunctionCall) otto.Value {
 		msg, _ := call.Argument(0).ToString()
-		fmt.Println(msg)
+		fmt.Printf("\n%s\n", msg)
 		return otto.NullValue()
 	})
 
