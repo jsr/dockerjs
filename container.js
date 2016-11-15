@@ -1,13 +1,16 @@
 function Container( image, name ) {
 	this.image = image;
 	this.name  = name; 
+	result = create({'Image':this.image}, null, null, this.name);
+	this.ID = result.ID
 }
 
 Container.prototype.run = function() {
-	result = run({Image: image}, null, null, name);
-	if( result != null ) {
-		this.ID = result.ID
-	}
+	result = run(this.ID);
+}
+
+Container.prototype.on = function(eventtype, callback) {
+	listen( this.ID, eventtype, callback );
 }
 
 Container.all = function() {
@@ -38,3 +41,4 @@ Container.findByID = function(id) {
 	result.ID = c.ID;
 	return result
 }
+

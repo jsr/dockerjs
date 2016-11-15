@@ -16,8 +16,9 @@ import (
 )
 
 type vm struct {
-	otto   *otto.Otto
-	docker *docker.Client
+	otto      *otto.Otto
+	docker    *docker.Client
+	listeners []*listener
 }
 
 func New() *vm {
@@ -30,7 +31,37 @@ func New() *vm {
 
 	vm.otto = otto.New()
 	vm.installExtensions()
+	go vm.eventLoop()
 	return vm
+}
+
+type listener struct {
+	ID    string
+	Event string
+	Call  *otto.FunctionCall
+}
+
+func (vm *vm) eventLoop() {
+	for {
+		msgCh, errCh := vm.docker.Events(context.Background(), types.EventsOptions{})
+		for {
+			select {
+			case event := <-msgCh:
+				for _, l := range vm.listeners {
+					if l.ID == event.Actor.ID && l.Event == event.Action {
+						callback := l.Call.Argument(2)
+						callback.Call(otto.NullValue(), event)
+					}
+				}
+			case <-errCh:
+				time.Sleep(3 * time.Second)
+				break
+			default:
+				time.Sleep(3 * time.Second)
+				break
+			}
+		}
+	}
 }
 
 func (vm *vm) Evaluate(input string) (output string, err error) {
@@ -69,6 +100,32 @@ Builtin commands:
 `)
 		return otto.NullValue()
 	})
+
+	vm.otto.Set("listen", func(call otto.FunctionCall) otto.Value {
+		if !call.Argument(0).IsDefined() {
+			fmt.Println("Must specify ID of container to listen on")
+			return otto.NullValue()
+		}
+		if !call.Argument(1).IsDefined() {
+			fmt.Println("Must specify event to listen for")
+			return otto.NullValue()
+		}
+		if !call.Argument(2).IsDefined() {
+			fmt.Println("Must specify callback")
+			return otto.NullValue()
+		}
+
+		id, _ := call.Argument(0).ToString()
+		event, _ := call.Argument(1).ToString()
+		l := &listener{
+			ID:    id,
+			Event: event,
+			Call:  &call,
+		}
+		vm.listeners = append(vm.listeners, l)
+		return otto.NullValue()
+	})
+
 	vm.otto.Set("sleep", func(call otto.FunctionCall) otto.Value {
 		millis, _ := call.Argument(0).ToInteger()
 		time.Sleep(time.Duration(millis) * time.Millisecond)
@@ -115,7 +172,7 @@ Builtin commands:
 		return val
 	})
 
-	vm.otto.Set("run", func(call otto.FunctionCall) otto.Value {
+	vm.otto.Set("create", func(call otto.FunctionCall) otto.Value {
 		containerConfigRaw, err := call.Argument(0).Export()
 		if err != nil {
 			fmt.Println("Must specify container.Config")
@@ -178,15 +235,21 @@ Builtin commands:
 			return otto.NullValue()
 		}
 
-		err = vm.docker.ContainerStart(context.Background(), create_result.ID, types.ContainerStartOptions{})
+		val, _ := vm.otto.ToValue(create_result)
+		return val
+
+	})
+
+	vm.otto.Set("run", func(call otto.FunctionCall) otto.Value {
+		id, _ := call.Argument(0).ToString()
+
+		err := vm.docker.ContainerStart(context.Background(), id, types.ContainerStartOptions{})
 
 		if err != nil {
 			fmt.Println("Failed starting container:", err)
 			return otto.NullValue()
 		}
-
-		val, _ := vm.otto.ToValue(create_result)
-		return val
+		return otto.NullValue()
 	})
 	vm.Evaluate("require('container.js')")
 }
