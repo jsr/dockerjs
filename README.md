@@ -23,8 +23,8 @@ new Container(image,name) | Creates a new container
 Container.all() | returns a list of all running containers 
 Container.findByID(id) | returns container matching the specified id 
 Container.match(fn) | fn is a function which is evaluated against each running container. matched containers are returned 
-<container>.run() | starts the container 
-<container>.on(event, fn) | calls fn when the specified event is raised by the container 
+Container.prototype.run() | starts the container 
+Container.prototype.on(event, fn) | calls fn when the specified event is raised by the container 
 
 
 # Low level API 
