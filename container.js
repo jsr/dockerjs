@@ -18,7 +18,12 @@ Container.prototype.on = function(eventtype, callback) {
 }
 
 Container.all = function() {
-	return list()
+	containers = list();
+	results = [];
+	for( i = 0; i < containers.length; i++ ) {
+		results.push( new Container(containers[i].Image, containers[i].Names[0], containers[i].ID));
+	}
+	return results
 }
 
 Container.match = function(predicate) {
