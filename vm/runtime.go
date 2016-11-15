@@ -47,6 +47,19 @@ func (vm *vm) Evaluate(input string) (output string, err error) {
 }
 
 func (vm *vm) installExtensions() {
+	vm.otto.Set("help", func(call otto.FunctionCall) otto.Value {
+		fmt.Println(`
+Builtin commands: 
+
+  list()                                        Returns the list of running containers 
+  run(config, hostConfig, networkConfig, name)  Pull, create, then run a new container
+  sleep(milliseconds)                           Sleep for specified millis
+  require(filename)                             Load a .js file into the runtime
+	print(string)                                 Output string to stdout
+
+`)
+		return otto.NullValue()
+	})
 	vm.otto.Set("sleep", func(call otto.FunctionCall) otto.Value {
 		millis, _ := call.Argument(0).ToInteger()
 		time.Sleep(time.Duration(millis) * time.Millisecond)
@@ -76,7 +89,7 @@ func (vm *vm) installExtensions() {
 		return otto.NullValue()
 	})
 
-	vm.otto.Set("containers", func(call otto.FunctionCall) otto.Value {
+	vm.otto.Set("list", func(call otto.FunctionCall) otto.Value {
 		containers, err := vm.docker.ContainerList(context.Background(), types.ContainerListOptions{})
 		if err != nil {
 			fmt.Println("Couldn't find containers: ", err)

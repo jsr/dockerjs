@@ -20,6 +20,10 @@ func main() {
 		return
 	}
 	defer l.Close()
+
+	fmt.Println("Docker.js shell version 0.0.1")
+	fmt.Println("Type help() to get a list of builtin commands")
+
 	for {
 		input, err := l.Readline()
 		if err == io.EOF {
