@@ -5,10 +5,8 @@ Docker.js is a javascript runtime for docker. It allows you to write javascript 
 # Installation 
 
 ```
-$ git clone https://github.com/jsr/dockerjs.git
-$ cd dockerjs 
-$ go get 
-$ go build 
+$ go get github.com/jsr/dockerjs
+$ dockerjs 
 ```
 
 In order to run docker.js, you'll need a docker host available and your ENV setup so that the docker client API can reach it. 
